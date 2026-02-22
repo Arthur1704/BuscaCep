@@ -2,36 +2,38 @@
 <html xmlns:th="http://www.thymeleaf.org">
 
 <head>
-    <title>Buscar CEP</title>
+    <meta charset="UTF-8">
+    <title>Buscar CEP por Endereço</title>
 </head>
 
 <body>
 
-    <h2>Buscar CEP</h2>
+    <h2>Buscar CEP pelo Endereço</h2>
 
-    <form method="post" action="/buscar">
-        <input type="text" name="cep" placeholder="Digite o CEP" required>
-        <button type="submit">Buscar</button>
+    <!-- FORMULÁRIO -->
+    <form method="post" action="/buscar-cep">
+        <input type="text" name="rua" placeholder="Rua" required>
+        <input type="text" name="cidade" placeholder="Cidade" required>
+        <input type="text" name="estado" placeholder="UF (ex: SP)" required>
+        <button type="submit">Buscar CEP</button>
     </form>
 
     <hr>
 
+    <!-- MENSAGEM DE ERRO -->
     <div th:if="${erro != null}">
         <p style="color:red;" th:text="${erro}"></p>
     </div>
 
-    <div th:if="${endereco != null}">
+    <!-- RESULTADO -->
+    <div th:if="${cep != null}">
         <h3>Resultado:</h3>
 
-        <p><strong>Rua:</strong> <span th:text="${endereco.rua}"></span></p>
-        <p><strong>Bairro:</strong> <span th:text="${endereco.bairro}"></span></p>
-        <p><strong>Cidade:</strong> <span th:text="${endereco.cidade}"></span></p>
-        <p><strong>Estado:</strong> <span th:text="${endereco.estado}"></span></p>
+        <p><strong>Rua:</strong> <span th:text="${rua}"></span></p>
+        <p><strong>Cidade:</strong> <span th:text="${cidade}"></span></p>
+        <p><strong>Estado:</strong> <span th:text="${estado}"></span></p>
+        <p><strong>CEP:</strong> <span th:text="${cep}"></span></p>
     </div>
-
-    <form method="get" action="/exportar">
-        <button type="submit">Exportar para Excel</button>
-    </form>
 
 </body>
 
