@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <title>Buscar CEP</title>
+</head>
+
+<body>
+
+    <h2>Buscar CEP</h2>
+
+    <form method="post" action="/buscar">
+        <input type="text" name="cep" placeholder="Digite o CEP" required>
+        <button type="submit">Buscar</button>
+    </form>
+
+    <hr>
+
+    <div th:if="${erro != null}">
+        <p style="color:red;" th:text="${erro}"></p>
+    </div>
+
+    <div th:if="${endereco != null}">
+        <h3>Resultado:</h3>
+
+        <p><strong>Rua:</strong> <span th:text="${endereco.rua}"></span></p>
+        <p><strong>Bairro:</strong> <span th:text="${endereco.bairro}"></span></p>
+        <p><strong>Cidade:</strong> <span th:text="${endereco.cidade}"></span></p>
+        <p><strong>Estado:</strong> <span th:text="${endereco.estado}"></span></p>
+    </div>
+
+    <form method="get" action="/exportar">
+        <button type="submit">Exportar para Excel</button>
+    </form>
+
+</body>
+
+</html>
