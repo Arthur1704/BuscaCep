@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resultados da Busca</title>
+    <link rel="stylesheet" th:href="@{/css/cep.css}">
+</head>
+
+<body>
+
+    <div class="container" style="max-width: 900px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h2>Resultados do Lote</h2>
+            <a th:href="@{/}" class="btn-link">
+                <button type="button" style="background-color: #666;">Nova Busca</button>
+            </a>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Rua</th>
+                    <th>Cidade</th>
+                    <th>UF</th>
+                    <th>CEP</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="item : ${listaResultados}">
+                    <td th:text="${item[0]}"></td>
+                    <td th:text="${item[1]}"></td>
+                    <td th:text="${item[2]}"></td>
+                    <td style="font-weight: bold; color: #4a90e2;" th:text="${item[3]}"></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div style="margin-top: 30px; text-align: center;">
+            <a th:href="@{/exportar-excel}">
+                <button type="button" style="background-color: #27ae60; padding: 15px 30px; font-size: 1.1em;">
+                    Exportar para Excel (.xlsx)
+                </button>
+            </a>
+        </div>
+    </div>
+
+</body>
+
+</html>

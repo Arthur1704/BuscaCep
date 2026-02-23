@@ -66,7 +66,7 @@ public class CepController {
 
         model.addAttribute("listaResultados", listaResultados);
 
-        return "cep";
+        return "resultado";
     }
 
     @GetMapping("/exportar-excel")
