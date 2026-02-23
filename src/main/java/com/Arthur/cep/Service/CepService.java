@@ -12,6 +12,11 @@ import org.springframework.web.multipart.MultipartFile;
 import com.Arthur.cep.Model.Entities.ViaCepResponse;
 import com.opencsv.CSVReader;
 
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+
 @Service
 public class CepService {
 
@@ -63,5 +68,46 @@ public class CepService {
             e.printStackTrace();
         }
         return resultados;
+    }
+
+    public ByteArrayInputStream gerarExcel(List<String[]> dados) {
+        try (Workbook workbook = new XSSFWorkbook(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            Sheet sheet = workbook.createSheet("CEPs Encontrados");
+
+            // Estilo para o cabeçalho
+            CellStyle headerStyle = workbook.createCellStyle();
+            Font font = workbook.createFont();
+            font.setBold(true);
+            headerStyle.setFont(font);
+
+            // Criar cabeçalho
+            Row headerRow = sheet.createRow(0);
+            String[] colunas = { "Rua", "Cidade", "UF", "CEP" };
+            for (int i = 0; i < colunas.length; i++) {
+                Cell cell = headerRow.createCell(i);
+                cell.setCellValue(colunas[i]);
+                cell.setCellStyle(headerStyle);
+            }
+
+            // Preencher dados
+            int rowIdx = 1;
+            for (String[] linha : dados) {
+                Row row = sheet.createRow(rowIdx++);
+                row.createCell(0).setCellValue(linha[0]);
+                row.createCell(1).setCellValue(linha[1]);
+                row.createCell(2).setCellValue(linha[2]);
+                row.createCell(3).setCellValue(linha[3]);
+            }
+
+            // Auto-ajuste das colunas
+            for (int i = 0; i < colunas.length; i++) {
+                sheet.autoSizeColumn(i);
+            }
+
+            workbook.write(out);
+            return new ByteArrayInputStream(out.toByteArray());
+        } catch (Exception e) {
+            throw new RuntimeException("Erro ao gerar Excel: " + e.getMessage());
+        }
     }
 }

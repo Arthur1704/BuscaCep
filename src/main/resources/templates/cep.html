@@ -71,6 +71,16 @@
         </table>
     </div>
 
+    <div class="container" style="max-width: 800px;" th:if="${listaResultados != null}">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <h3>Resultados do Arquivo</h3>
+            <a th:href="@{/exportar-excel}">
+                <button type="button" style="background-color: #27ae60;">Download Excel (.xlsx)</button>
+            </a>
+        </div>
+
+    </div>
+
 </body>
 
 </html>
