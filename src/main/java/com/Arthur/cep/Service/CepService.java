@@ -1,10 +1,15 @@
 package com.Arthur.cep.Service;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
@@ -12,77 +17,116 @@ import org.springframework.web.multipart.MultipartFile;
 import com.Arthur.cep.Model.Entities.ViaCepResponse;
 import com.opencsv.CSVReader;
 
-import org.apache.poi.ss.usermodel.*;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-
 @Service
 public class CepService {
 
-    public String buscarCepPorEndereco(String uf, String cidade, String rua) {
+    private final RestTemplate restTemplate;
+
+    public CepService() {
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(5000);
+        factory.setReadTimeout(5000);
+
+        this.restTemplate = new RestTemplate(factory);
+    }
+
+    // =========================
+    // BUSCAR CEP POR ENDEREÇO
+    // =========================
+    public ViaCepResponse buscarCepPorEndereco(String uf, String cidade, String rua) {
 
         try {
-
-            String ufLimpo = uf.trim();
-            String cidadeLimpa = cidade.trim();
-            String ruaLimpa = rua.trim();
+            if (uf == null || cidade == null || rua == null ||
+                    uf.isBlank() || cidade.isBlank() || rua.isBlank()) {
+                return null;
+            }
 
             String url = "https://viacep.com.br/ws/{uf}/{cidade}/{rua}/json/";
 
-            RestTemplate restTemplate = new RestTemplate();
-
-            ViaCepResponse[] resposta = restTemplate.getForObject(url, ViaCepResponse[].class, ufLimpo, cidadeLimpa,
-                    ruaLimpa);
+            ViaCepResponse[] resposta = restTemplate.getForObject(
+                    url,
+                    ViaCepResponse[].class,
+                    uf.trim(),
+                    cidade.trim(),
+                    rua.trim());
 
             if (resposta != null && resposta.length > 0) {
-                return resposta[0].getCep();
+                return resposta[0];
             }
 
         } catch (Exception e) {
-            System.err.println("Erro ao buscar CEP para: " + rua + ", " + cidade + " - " + uf);
+            System.err.println("Erro ao buscar CEP: " + e.getMessage());
         }
 
-        return "Não encontrado";
+        return null;
     }
 
+    // =========================
+    // PROCESSAR CSV
+    // =========================
     public List<String[]> processarCsv(MultipartFile arquivo) {
+
         List<String[]> resultados = new ArrayList<>();
+
         try (CSVReader reader = new CSVReader(
                 new InputStreamReader(arquivo.getInputStream(), StandardCharsets.UTF_8))) {
+
             String[] linha;
-            // Pular cabeçalho se houver: reader.readNext();
+
+            // Se tiver cabeçalho:
+            // reader.readNext();
 
             while ((linha = reader.readNext()) != null) {
-                // Supondo CSV: rua, cidade, uf
+
                 if (linha.length >= 3) {
+
                     String rua = linha[0];
                     String cidade = linha[1];
                     String uf = linha[2];
-                    String cep = buscarCepPorEndereco(uf, cidade, rua);
 
-                    resultados.add(new String[] { rua, cidade, uf, cep });
+                    ViaCepResponse resposta = buscarCepPorEndereco(uf, cidade, rua);
+
+                    String bairro = (resposta != null) ? resposta.getBairro() : "Não encontrado";
+                    String cep = (resposta != null) ? resposta.getCep() : "Não encontrado";
+
+                    resultados.add(new String[] {
+                            rua,
+                            cidade,
+                            uf,
+                            bairro,
+                            cep
+                    });
                 }
             }
+
         } catch (Exception e) {
-            e.printStackTrace();
+            throw new RuntimeException("Erro ao processar CSV: " + e.getMessage());
         }
+
         return resultados;
     }
 
+    // =========================
+    // GERAR EXCEL
+    // =========================
     public ByteArrayInputStream gerarExcel(List<String[]> dados) {
-        try (Workbook workbook = new XSSFWorkbook(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+
+        try (Workbook workbook = new XSSFWorkbook();
+                ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+
             Sheet sheet = workbook.createSheet("CEPs Encontrados");
 
-            // Estilo para o cabeçalho
+            // Estilo do cabeçalho
             CellStyle headerStyle = workbook.createCellStyle();
             Font font = workbook.createFont();
             font.setBold(true);
             headerStyle.setFont(font);
 
-            // Criar cabeçalho
+            // Cabeçalho atualizado
+            String[] colunas = { "Rua", "Cidade", "UF", "Bairro", "CEP" };
+
             Row headerRow = sheet.createRow(0);
-            String[] colunas = { "Rua", "Cidade", "UF", "CEP" };
+
             for (int i = 0; i < colunas.length; i++) {
                 Cell cell = headerRow.createCell(i);
                 cell.setCellValue(colunas[i]);
@@ -91,21 +135,24 @@ public class CepService {
 
             // Preencher dados
             int rowIdx = 1;
+
             for (String[] linha : dados) {
                 Row row = sheet.createRow(rowIdx++);
-                row.createCell(0).setCellValue(linha[0]);
-                row.createCell(1).setCellValue(linha[1]);
-                row.createCell(2).setCellValue(linha[2]);
-                row.createCell(3).setCellValue(linha[3]);
+                row.createCell(0).setCellValue(linha[0]); // rua
+                row.createCell(1).setCellValue(linha[1]); // cidade
+                row.createCell(2).setCellValue(linha[2]); // uf
+                row.createCell(3).setCellValue(linha[3]); // bairro
+                row.createCell(4).setCellValue(linha[4]); // cep
             }
 
-            // Auto-ajuste das colunas
+            // Ajustar largura automática
             for (int i = 0; i < colunas.length; i++) {
                 sheet.autoSizeColumn(i);
             }
 
             workbook.write(out);
             return new ByteArrayInputStream(out.toByteArray());
+
         } catch (Exception e) {
             throw new RuntimeException("Erro ao gerar Excel: " + e.getMessage());
         }
